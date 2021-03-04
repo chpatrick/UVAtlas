@@ -92,7 +92,7 @@
 #include <queue>
 
 #include <Eigen/Dense>
-#include <Eigen/Eigenvalues>
+#include <Spectra/SymEigsSolver.h>
 
 #ifndef WIN32
 #include <mutex>

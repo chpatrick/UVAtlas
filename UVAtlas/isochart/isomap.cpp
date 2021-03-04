@@ -10,6 +10,8 @@
 #include "pch.h"
 #include "isomap.h"
 #include "isochartutil.h"
+#include <Eigen/Dense>
+#include <iostream>
 
 using namespace Isochart;
 
