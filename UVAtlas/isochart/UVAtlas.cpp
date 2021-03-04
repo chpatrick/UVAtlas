@@ -1835,25 +1835,20 @@ HRESULT __cdecl DirectX::UVAtlasApplyRemap(
 _Use_decl_annotations_
 void __cdecl UVAtlasDebugPrintf(unsigned int lvl, const char* szFormat, ...)
 {
-    if (lvl > 0)
+    if (lvl > 10)
     {
         // Change this to see more verbose messages...
         return;
     }
 
     char strA[4096];
-    char strB[4096];
 
     va_list ap;
     va_start(ap, szFormat);
-    vsprintf_s(strA, sizeof(strA), szFormat, ap);
+    vsnprintf(strA, sizeof(strA), szFormat, ap);
     strA[4095] = '\0';
     va_end(ap);
 
-    sprintf_s(strB, sizeof(strB), "UVAtlas: %s\r\n", strA);
-
-    strB[4095] = '\0';
-
-    OutputDebugStringA(strB);
+    fprintf(stderr, "UVAtlas: %s\r\n", strA);
 }
 #endif // _DEBUG
