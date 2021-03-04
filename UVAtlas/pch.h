@@ -91,6 +91,9 @@
 #include <vector>
 #include <queue>
 
+#include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
+
 #ifndef WIN32
 #include <mutex>
 #include <thread>

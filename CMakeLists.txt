@@ -126,6 +126,11 @@ if ((NOT WIN32) OR VCPKG_TOOLCHAIN)
     target_link_libraries(${PROJECT_NAME} PRIVATE Microsoft::DirectX-Headers Microsoft::DirectXMath)
 endif()
 
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(BLAS REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen ${BLAS_LIBRARIES})
+target_compile_definitions(${PROJECT_NAME} PRIVATE EIGEN_USE_LAPACKE)
+
 #--- Package
 include(CMakePackageConfigHelpers)
 
