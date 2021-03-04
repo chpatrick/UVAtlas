@@ -41,6 +41,8 @@ namespace Isochart
                 size_t dwMaxRange,
                 float epsilon=1e-10)
         {
+            DPF(0, "Starting SymmetricMatrix::GetEigen with dwDimension %d, dwMaxRange %d", dwDimension, dwMaxRange);
+
             typedef Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> EigenMatrix;
             Eigen::Map<const EigenMatrix> matrix(pMatrix, dwDimension, dwDimension);
             Eigen::Map<EigenMatrix> eigenvalues(pEigenValue, dwMaxRange, 1);
@@ -48,26 +50,35 @@ namespace Isochart
 
             // Check arguments.
             if (!pMatrix || !pEigenValue || !pEigenVector) {
+                DPF(0, "Got null pointers in SymmetricMatrix::GetEigen");
                 return false;
             }
 
             if (dwDimension < dwMaxRange
                 || dwMaxRange == 0
                 || dwDimension == 0) {
+                DPF(0, "Got invalid dwDimension %d, dwMaxRange %d", dwDimension, dwMaxRange);
                 return false;
             }
 
+            const auto solveStartTime = std::chrono::steady_clock::now();
+
             // If we want every eigenvalue, use the built-in Eigen solver. Spectra doesn't support this.
-            if (dwDimension == dwMaxRange) {
+            // if (dwDimension == dwMaxRange) {
+            if (true) { // Always use the Eigen solver for now.
+                DPF(0, "Using Eigen::SelfAdjointEigenSolver");
                 const Eigen::SelfAdjointEigenSolver<EigenMatrix> eigenSolver(matrix);
                 if (eigenSolver.info() != Eigen::ComputationInfo::Success) {
+                    DPF(0, "Eigen::SelfAdjointEigenSolver failed with info() == %d", eigenSolver.info());
                     return false;
                 }
 
                 // We want the eigenvalues in descending order, Eigen produces them in increasing order.
-                eigenvalues = eigenSolver.eigenvalues().reverse();
-                eigenvectors = eigenSolver.eigenvectors().rowwise().reverse();
+                eigenvalues = eigenSolver.eigenvalues().reverse().head(dwMaxRange);
+                eigenvectors = eigenSolver.eigenvectors().rowwise().reverse().leftCols(dwMaxRange);
             } else {
+                DPF(0, "Using Spectra::SymEigsSolver");
+
                 constexpr int maxIterations = 1000;
 
                 // Construct matrix operation object using the wrapper class DenseSymMatProd.
@@ -89,12 +100,17 @@ namespace Isochart
                 );
 
                 if (numConverged < dwMaxRange || eigs.info() != Spectra::SUCCESSFUL) {
+                    DPF(0, "Spectra::SymEigsSolver failed with info() == %d, numConverged == %d, dwDimension == %d, dwMaxRange == %d", eigs.info(), numConverged, dwDimension, dwMaxRange);
                     return false;
                 }
 
                 eigenvalues = eigs.eigenvalues();
                 eigenvectors = eigs.eigenvectors();
             }
+
+            const auto solveEndTime = std::chrono::steady_clock::now();
+            std::chrono::duration<double> elapsed_seconds = solveEndTime - solveStartTime;
+            DPF(0, "SymmetricMatrix::GetEigen took %f seconds with dwDimension %d, dwMaxRange %d", elapsed_seconds.count(), dwDimension, dwMaxRange);
 
             return true;
         }
