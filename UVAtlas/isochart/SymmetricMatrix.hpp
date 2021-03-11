@@ -63,38 +63,42 @@ namespace Isochart
 
             // If we don't want every eigenvalue, try solving with Spectra first.
             if (dwMaxRange < dwDimension) {
-                DPF(0, "Using Spectra::SymEigsSolver");
-                const auto spectraStartTime = std::chrono::steady_clock::now();
+                try {
+                    DPF(0, "Using Spectra::SymEigsSolver");
+                    const auto spectraStartTime = std::chrono::steady_clock::now();
 
-                constexpr int maxIterations = 1000; // Spectra's default
+                    constexpr int maxIterations = 1000; // Spectra's default
 
-                // Construct matrix operation object using the wrapper class DenseSymMatProd.
-                Spectra::DenseSymMatProd<value_type> op(matrix);
-                // Construct eigen solver object, requesting the largest dwMaxRange eigenvalues
-                Spectra::SymEigsSolver<value_type, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<value_type> > eigs(
-                    &op,
-                    dwMaxRange,
-                    // Convergence speed, higher is faster with more memory usage, recommended to be at least 2x nev, must be <= dimension.
-                    // @chpatrick didn't find substantial differences above 2x
-                    std::min(dwMaxRange * 2, dwDimension)
-                );
-                eigs.init();
-                const int numConverged = eigs.compute(
-                    maxIterations,
-                    epsilon,
-                    Spectra::LARGEST_ALGE // Sort by descending eigenvalues.
-                );
-                const auto spectraEndTime = std::chrono::steady_clock::now();
+                    // Construct matrix operation object using the wrapper class DenseSymMatProd.
+                    Spectra::DenseSymMatProd<value_type> op(matrix);
+                    // Construct eigen solver object, requesting the largest dwMaxRange eigenvalues
+                    Spectra::SymEigsSolver<value_type, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<value_type> > eigs(
+                        &op,
+                        dwMaxRange,
+                        // Convergence speed, higher is faster with more memory usage, recommended to be at least 2x nev, must be <= dimension.
+                        // @chpatrick didn't find substantial differences above 2x
+                        std::min(dwMaxRange * 2, dwDimension)
+                    );
+                    eigs.init();
+                    const int numConverged = eigs.compute(
+                        maxIterations,
+                        epsilon,
+                        Spectra::LARGEST_ALGE // Sort by descending eigenvalues.
+                    );
+                    const auto spectraEndTime = std::chrono::steady_clock::now();
 
-                const std::chrono::duration<double> spectraElapsed = spectraEndTime - spectraStartTime;
-                DPF(0, "Spectra::SymEigsSolver took %f seconds with dwDimension %d, dwMaxRange %d", spectraElapsed.count(), dwDimension, dwMaxRange);
+                    const std::chrono::duration<double> spectraElapsed = spectraEndTime - spectraStartTime;
+                    DPF(0, "Spectra::SymEigsSolver took %f seconds with dwDimension %d, dwMaxRange %d", spectraElapsed.count(), dwDimension, dwMaxRange);
 
-                if (numConverged >= dwMaxRange && eigs.info() == Spectra::SUCCESSFUL) {
-                    eigenvalues = eigs.eigenvalues();
-                    eigenvectors = eigs.eigenvectors();
-                    return true;
-                } else {
-                    DPF(0, "Spectra::SymEigsSolver failed with info() == %d, numConverged == %d, dwDimension == %d, dwMaxRange == %d", eigs.info(), numConverged, dwDimension, dwMaxRange);
+                    if (numConverged >= dwMaxRange && eigs.info() == Spectra::SUCCESSFUL) {
+                        eigenvalues = eigs.eigenvalues();
+                        eigenvectors = eigs.eigenvectors();
+                        return true;
+                    } else {
+                        DPF(0, "Spectra::SymEigsSolver failed with info() == %d, numConverged == %d, dwDimension == %d, dwMaxRange == %d", eigs.info(), numConverged, dwDimension, dwMaxRange);
+                    }
+                } catch (const std::exception& ex) {
+                    DPF(0, "Spectra::SymEigsSolver threw an exception with what() == \"%s\", dwDimension == %d, dwMaxRange == %d", ex.what(), dwDimension, dwMaxRange);
                 }
             }
 
